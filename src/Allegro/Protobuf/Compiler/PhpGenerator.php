@@ -398,7 +398,7 @@ class PhpGenerator
      *
      * @return string|null
      */
-    private function _createNamespaceName(DescriptorInterface $descriptor)
+    private function _createBaseNamespaceName(DescriptorInterface $descriptor)
     {
         if (isset($this->customArguments['options']['namespace'])) {
             return $this->customArguments['options']['namespace'];
@@ -424,9 +424,9 @@ class PhpGenerator
      *
      * @return string
      */
-    private function _createClassName(DescriptorInterface $descriptor)
+    private function _createSubNamespaceName(DescriptorInterface $descriptor)
     {
-        $components = array($descriptor->getName());
+        $components = array();
 
         $containing = $descriptor->getContaining();
         while (!is_null($containing)) {
@@ -434,11 +434,49 @@ class PhpGenerator
             $containing = $containing->getContaining();
         }
 
+        if (!$components) {
+            return null;
+        }
+
         $components = array_reverse($components);
 
-        $name = implode(self::CLASS_NAME_SEPARATOR, $components);
+        return implode(self::PHP_NAMESPACE_SEPARATOR, $components);
+    }
 
-        return $name;
+    /**
+     * @param DescriptorInterface $descriptor
+     *
+     * @return string|null
+     */
+    private function _createNamespaceName(DescriptorInterface $descriptor)
+    {
+        $baseNamespace = $this->_createBaseNamespaceName($descriptor);
+        if ($baseNamespace) {
+            $namespace = $baseNamespace;
+        } else {
+            $namespace = null;
+        }
+
+        $subNamespace = $this->_createSubNamespaceName($descriptor);
+        if ($subNamespace) {
+            if ($namespace) {
+                $namespace = $namespace . self::PHP_NAMESPACE_SEPARATOR . $subNamespace;
+            } else {
+                $namespace = $subNamespace;
+            }
+        }
+
+        return $namespace;
+    }
+
+    /**
+     * @param DescriptorInterface $descriptor
+     *
+     * @return string
+     */
+    private function _createClassName(DescriptorInterface $descriptor)
+    {
+        return $descriptor->getName();
     }
 
     /**
